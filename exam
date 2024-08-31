@@ -1,0 +1,134 @@
+
+
+import tkinter as tk
+from tkinter import messagebox, simpledialog
+
+class ShoppingListApp(tk.Tk):
+    def __init__(self):
+        super().__init__()
+
+        self.title("Store Management")
+        self.geometry("1500x1600")  #size
+        self.shopping_list = []  # Initialize shopping list
+        self.configure(bg='grey')  # Set background color for the main window
+        self.create_widgets()
+
+    def create_widgets(self):             # Create a frame with a blue background
+        self.frame = tk.Frame(self, bg='grey') 
+        self.frame.pack(fill="both", expand=True)
+
+        # Create a heading 
+        self.heading_label = tk.Label(self.frame, text="Store Management", font=("Helvetica", 24, "bold"), bg='grey', fg='white')
+        self.heading_label.pack(pady=20)
+
+        # Item entry
+        self.item_entry = tk.Entry(self.frame, width=50, bg='lightblue', font=("Helvetica", 16))  # Set background color and font for entry
+        self.item_entry.pack(pady=10)
+
+        # Frame for buttons
+        self.button_frame = tk.Frame(self.frame, bg='grey')
+        self.button_frame.pack(pady=20)
+
+        # Buttons with custom styling
+        button_style = {
+            'bg': 'pink',
+            'fg': 'black',
+            'font': ("Helvetica", 14),
+            'padx': 20,
+            'pady': 10,
+            'borderwidth': 2,
+            'relief': tk.RAISED
+        }
+
+        # Arrange buttons in a grid
+        self.add_button = tk.Button(self.button_frame, text="Add Item", command=self.add_item, **button_style)
+        self.add_button.grid(row=0, column=0, padx=10, pady=5)
+
+        self.remove_button = tk.Button(self.button_frame, text="Remove Item", command=self.remove_item, **button_style)
+        self.remove_button.grid(row=0, column=1, padx=10, pady=5)
+
+        self.clear_button = tk.Button(self.button_frame, text="Clear List", command=self.clear_list, **button_style)
+        self.clear_button.grid(row=0, column=2, padx=10, pady=5)
+
+        self.save_button = tk.Button(self.button_frame, text="Save List", command=self.save_list, **button_style)
+        self.save_button.grid(row=1, column=0, padx=10, pady=5)
+
+        self.load_button = tk.Button(self.button_frame, text="Load List", command=self.load_list, **button_style)
+        self.load_button.grid(row=1, column=1, padx=11, pady=6)
+
+        self.edit_button = tk.Button(self.button_frame, text="Edit Item", command=self.edit_item, **button_style)
+        self.edit_button.grid(row=1, column=2, padx=10, pady=5)
+
+        # Listbox to display items
+        self.listbox = tk.Listbox(self.frame, width=50, height=15, selectmode=tk.SINGLE, bg='lightblue', font=("Helvetica", 14))  # Set background color and font for listbox
+        self.listbox.pack(pady=10)
+
+    def add_item(self):
+        item = self.item_entry.get().strip()           # Retrieve text entered by user
+        if item:
+            if item not in self.shopping_list:
+                self.listbox.insert(tk.END, item)      #if not already present in list it will be appended to list
+                self.shopping_list.append(item)
+                self.item_entry.delete(0, tk.END)
+            else:
+                messagebox.showwarning("Duplicate Item", "This item is already in the list.")
+        else:
+            messagebox.showwarning("Input Error", "Please enter an item.")
+
+    def remove_item(self):                               #function for remove button
+        try:
+            selected_index = self.listbox.curselection()[0]
+            item = self.listbox.get(selected_index)
+            self.listbox.delete(selected_index)
+            self.shopping_list.remove(item)
+        except IndexError:                               #if not selected items from the list
+            messagebox.showwarning("Selection Error", "Please select an item to remove.")
+
+    def clear_list(self):                                #function for clearing the list
+        if messagebox.askyesno("Clear List", "Are you sure you want to clear the entire list?"):
+            self.listbox.delete(0, tk.END)
+            self.shopping_list.clear()                   #clears the internal list
+
+    def edit_item(self):
+        try:
+            selected_index = self.listbox.curselection()[0]
+            old_item = self.listbox.get(selected_index)
+            #displays an input dialog. It prompts the user to enter a new value for the selected item.
+            new_item = simpledialog.askstring("Edit Item", "Edit item:", initialvalue=old_item)  #pre-fills the dialog with the current value of the selected item.
+            if new_item:
+                new_item = new_item.strip()
+                if new_item and new_item not in self.shopping_list:
+                    self.listbox.delete(selected_index) #Removes the old item from the Listbox
+                    self.listbox.insert(selected_index, new_item) #Inserts the new item at the same index
+                    self.shopping_list[selected_index] = new_item #Updates the internal list to reflect the change.
+                elif not new_item:
+                    messagebox.showwarning("Input Error", "Item cannot be empty.")
+                elif new_item in self.shopping_list:
+                    messagebox.showwarning("Duplicate Item", "This item is already in the list.")
+        except IndexError:
+            messagebox.showwarning("Selection Error", "Please select an item to edit.")
+
+    def save_list(self):
+        with open("shopping_list.txt", "w") as file:  #open the file and write to the file
+            for item in self.shopping_list:
+                file.write(item + "\n")
+        messagebox.showinfo("Save List", "Shopping list saved successfully.")
+
+    def load_list(self):
+        try:
+            with open("shopping_list.txt", "r") as file:    #open hthe file
+                items = file.readlines()                    #read the file
+                self.listbox.delete(0, tk.END)            
+                self.shopping_list.clear()
+                for item in items:
+                    item = item.strip()
+                    if item:                               #checks if the item is not an empty string
+                        self.listbox.insert(tk.END, item)  #dds the cleaned item to the end of the Listbox.
+                        self.shopping_list.append(item)    #dds the cleaned item to the internal list
+            messagebox.showinfo("Load List", "Shopping list loaded successfully.")
+        except FileNotFoundError:
+            messagebox.showwarning("Load Error", "No saved list found.")
+
+if __name__ == "__main__":     #checks if the script is being run directly.
+    app = ShoppingListApp()
+    app.mainloop()
